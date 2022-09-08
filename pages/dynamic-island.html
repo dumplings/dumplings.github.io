@@ -9,14 +9,19 @@
 </head>
 
 <body>
-  <button onclick="exitFunc">退出体验</button>
+  <div id="user-agent"></div>
+  <button onclick="toggleFullscreen">切换全屏</button>
   <script>
     window.onload = function () {
-      document.documentElement.requestFullscreen()
+      document.getElementById('user-agent').innerHTML = navigator.userAgent
     }
 
-    function exitFunc() {
-      document.exitFullscreen();
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        document.documentElement.requestFullscreen()
+      }
     }
   </script>
 </body>

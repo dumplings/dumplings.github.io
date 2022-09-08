@@ -12,9 +12,9 @@
   <div id="user-agent"></div>
   <div id="normal-full"></div>
   <div id="ios-full"></div>
-  <button onclick="toggleFullscreen()">切换全屏2</button>
+  <button onclick="toggleFullscreen()">切换全屏3</button>
   <script>
-    const $ = document.querySelector;
+    const $ = (s) => document.querySelector(s);
     window.onload = function () {
       document.getElementById('user-agent').innerHTML = navigator.userAgent
       if (document.documentElement.requestFullscreen) {

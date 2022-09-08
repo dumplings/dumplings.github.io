@@ -10,15 +10,16 @@
 
 <body>
   <div id="user-agent"></div>
-  <button onclick="toggleFullscreen">切换全屏</button>
+  <button onclick="toggleFullscreen()">切换全屏</button>
   <script>
     window.onload = function () {
       document.getElementById('user-agent').innerHTML = navigator.userAgent
     }
 
     function toggleFullscreen() {
+      console.log(111);
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen()
+        document.documentElement.requestFullscreen().catch(err => alert(JSON.stringify(err)))
       } else {
         document.exitFullscreen();
       }

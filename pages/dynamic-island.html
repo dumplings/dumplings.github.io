@@ -10,16 +10,31 @@
 
 <body>
   <div id="user-agent"></div>
-  <button onclick="toggleFullscreen()">切换全屏</button>
+  <div id="normal-full"></div>
+  <div id="ios-full"></div>
+  <button onclick="toggleFullscreen()">切换全屏1</button>
   <script>
     window.onload = function () {
       document.getElementById('user-agent').innerHTML = navigator.userAgent
+      if (document.documentElement.requestFullscreen) {
+        $('#normal-full').innerHTML = `requestFullscreen true`
+      }
+      if (document.documentElement.webkitRequestFullscreen) {
+        $('#ios-full').innerHTML = `webkitRequestFullscreen true`
+      }
     }
 
     function toggleFullscreen() {
       console.log(111);
+      const elem = document.documentElement;
       if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => alert(JSON.stringify(err)))
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+          elem.msRequestFullscreen();
+        }
       } else {
         document.exitFullscreen();
       }

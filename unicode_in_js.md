@@ -32,11 +32,6 @@ unicode代码：
 1. 仅标识符和字符串可以使用unicode；
 2. 数字使用16进制表示；
 
-## 用途
-
-自己寻思吧。
-
-
 ## 相关文档
 
 * [Unicode in Javascript source code](https://www.educative.io/answers/how-to-insert-unicode-in-javascript)

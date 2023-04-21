@@ -7,22 +7,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vite + Vue</title>
   <script>
-    const handle = () => window.open('/');
+    let timer = 0;
+    const handle = () => {
+      clearInterval(timer);
+     const popup = window.open('/');
+      timer = setInterval(()=>popup.postMessage(Date.now()), 2000);
+    };
   </script>
 </head>
 
 <body>
   <div id="app">
     <button id="btn">click11</button>
+    <div id="text"></div>
   </div>
   <script>
     const btn = document.querySelector('#btn');
     btn.addEventListener('click', handle);
-    setTimeout(() => {
-      const opener = window.opener;
-      const text = !!opener ? 'fail' : 'success';
-      alert(text + '-' + history.length);
-    }, 3000);
+   
+    
+    window.addEventListener('message', (event) => {
+      if (typeof event.data === 'number') {
+        document.getElementById('text').innerHTML = event.data;
+      }
+    });
   </script>
 </body>
 

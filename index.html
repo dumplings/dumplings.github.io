@@ -13,7 +13,7 @@
 
 <body>
   <div id="app">
-    <button id="btn">click</button>
+    <button id="btn">click11</button>
   </div>
   <script>
     const btn = document.querySelector('#btn');
@@ -21,7 +21,7 @@
     setTimeout(() => {
       const opener = window.opener;
       const text = !!opener ? 'fail' : 'success';
-      alert(text);
+      alert(text + '-' + history.length);
     }, 3000);
   </script>
 </body>

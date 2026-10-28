@@ -1,46 +1,99 @@
-# Astro Starter Kit: Basics
+# Personal Site
 
-```sh
-pnpm create astro@latest -- --template basics
+Personal website for `dumplings`, built with Astro and TypeScript.
+
+This repository is part of a multi-repository website project. It is independently installable and buildable.
+
+## Tech Stack
+
+- Astro 7
+- TypeScript 6 (strict mode)
+- pnpm 12
+- Static Site Generation (SSG)
+
+## Requirements
+
+- Node.js 24.x (tested with 24.22.1)
+- pnpm 12.6.0
+- Git
+
+See `.node-version` and the `packageManager` field in `package.json` for version conventions.
+
+## Getting Started
+
+Install dependencies:
+
+```bash
+pnpm install --frozen-lockfile
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Start the development server in background mode:
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+```bash
+pnpm exec astro dev --background
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+Manage the development server:
 
-## 🧞 Commands
+```bash
+pnpm exec astro dev status
+pnpm exec astro dev logs
+pnpm exec astro dev stop
+```
 
-All commands are run from the root of the project, from a terminal:
+## Available Commands
 
-| Command                | Action                                           |
-| :--------------------- | :----------------------------------------------- |
-| `pnpm install`         | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+| Command             | Description                              |
+| ------------------- | ---------------------------------------- |
+| `pnpm check`        | Run Astro and TypeScript diagnostics     |
+| `pnpm lint`         | Run ESLint                               |
+| `pnpm format`       | Format supported files with Prettier     |
+| `pnpm format:check` | Check formatting without modifying files |
+| `pnpm build`        | Type-check and generate the static site  |
+| `pnpm preview`      | Preview the static build                 |
 
-## 👀 Want to learn more?
+## Project Structure
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+| Directory         | Purpose                                 |
+| ----------------- | --------------------------------------- |
+| `src/pages/`      | Astro routes and pages                  |
+| `src/layouts/`    | Page layouts                            |
+| `src/components/` | Astro components                        |
+| `src/assets/`     | Assets processed by Astro               |
+| `public/`         | Static assets copied without processing |
+| `dist/`           | Generated static output (not committed) |
+
+## Code Quality
+
+The project uses:
+
+- ESLint with recommended JavaScript, TypeScript and Astro rules
+- Prettier with Astro support
+- Husky and lint-staged for pre-commit checks
+
+Pre-commit hooks check staged files only.
+
+Full type checking and static generation are performed by `pnpm build`.
+
+## Content Architecture
+
+The planned content sources are:
+
+- A separate local Strapi 5 CMS for structured content
+- Repository-managed Markdown for technical articles and project write-ups
+
+CMS integration and Markdown content collections are not yet implemented.
+
+The current scaffold does not require Strapi to be running.
+
+## Deployment
+
+The intended GitHub Pages repository is `dumplings.github.io`.
+
+Deployment configuration and publishing workflows will be implemented in a later project stage.
+
+## Current Status
+
+B-01 provides the initial repository and development tooling.
+
+The current page is a temporary Astro scaffold. Internationalization, CMS integration, article routing, production UI, and SEO features are intentionally deferred to later stages.

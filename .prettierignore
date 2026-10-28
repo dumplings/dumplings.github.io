@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Generated files
+dist/
+.astro/
+
+# Package manager lockfile
+pnpm-lock.yaml
+
+# Binary assets
+public/favicon.ico

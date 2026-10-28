@@ -2,6 +2,7 @@
   "name": "personal-site",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@12.6.0",
   "engines": {
     "node": ">=24.16.0 <25"
   },

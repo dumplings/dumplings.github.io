@@ -1,0 +1,321 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { createServer } from "node:http";
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import process from "node:process";
+import { test } from "node:test";
+import { URL, fileURLToPath } from "node:url";
+import { CMS_SITE_ID } from "../src/lib/cms/adapter.ts";
+import { languageHref } from "../src/lib/i18n/urls.ts";
+
+const project = fileURLToPath(new URL("../", import.meta.url));
+const sentinel = "synthetic-ssg-secret-never-a-real-token";
+const record = (strapiLocale, urlSegment, extra = {}) => ({
+  siteId: CMS_SITE_ID,
+  strapiLocale,
+  urlSegment,
+  direction: "ltr",
+  enabled: true,
+  isDefault: strapiLocale === "en",
+  ...extra,
+});
+const records = () => [
+  record("zh-CN", "zh"),
+  record("en", "en"),
+  ...(CMS_SITE_ID === "demo-b2b"
+    ? [record("de", "de"), record("ar", "ar", { direction: "rtl" })]
+    : []),
+  record("fr", "fr", { enabled: false }),
+];
+
+async function setup(t, rows, base = "/", missing = false) {
+  const root = await mkdtemp(path.join(tmpdir(), "cms-ssg-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, "src"));
+  await cp(path.join(project, "src/lib"), path.join(root, "src/lib"), {
+    recursive: true,
+  });
+  await cp(path.join(project, "src/pages"), path.join(root, "src/pages"), {
+    recursive: true,
+  });
+  await symlink(
+    path.join(project, "node_modules"),
+    path.join(root, "node_modules"),
+    "dir",
+  );
+  await writeFile(
+    path.join(root, "package.json"),
+    JSON.stringify({ type: "module" }),
+  );
+  await writeFile(
+    path.join(root, "astro.config.mjs"),
+    `export default { output: "static", base: ${JSON.stringify(base)}, cacheDir: "./.cache/", vite: { cacheDir: "./.vite/" } };`,
+  );
+  const calls = [];
+  const server = createServer((request, response) => {
+    const url = new URL(request.url, "http://fixture.invalid");
+    calls.push({
+      method: request.method,
+      path: url.pathname,
+      locale: url.searchParams.get("locale"),
+    });
+    response.setHeader("Content-Type", "application/json");
+    if (
+      request.method !== "GET" ||
+      request.headers.authorization !== `Bearer ${sentinel}`
+    ) {
+      response.writeHead(401).end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+    if (url.pathname === "/api/site-locales") {
+      if (url.searchParams.get("filters[siteId][$eq]") !== CMS_SITE_ID) {
+        response
+          .writeHead(400)
+          .end(JSON.stringify({ error: "Wrong site filter" }));
+        return;
+      }
+      const page = Number(url.searchParams.get("pagination[page]"));
+      const pageSize = Number(url.searchParams.get("pagination[pageSize]"));
+      response.end(
+        JSON.stringify({
+          data: rows.slice((page - 1) * pageSize, page * pageSize),
+          meta: {
+            pagination: {
+              page,
+              pageSize,
+              total: rows.length,
+              pageCount: Math.ceil(rows.length / pageSize),
+            },
+          },
+        }),
+      );
+      return;
+    }
+    const endpoint =
+      CMS_SITE_ID === "personal-site" ? "personal-home" : "b2b-home";
+    if (url.pathname === `/api/${endpoint}`) {
+      const locale = url.searchParams.get("locale");
+      response.end(
+        JSON.stringify({
+          data:
+            missing && locale === "zh-CN"
+              ? null
+              : {
+                  locale,
+                  headline: `Title-${locale}`,
+                  description:
+                    locale === "zh-CN" ? null : `Description-${locale}`,
+                },
+        }),
+      );
+      return;
+    }
+    response.writeHead(404).end(JSON.stringify({ error: "Not found" }));
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(
+    () =>
+      new Promise((resolve) => {
+        server.closeAllConnections();
+        server.close(resolve);
+      }),
+  );
+  const address = server.address();
+  return { root, calls, url: `http://127.0.0.1:${address.port}` };
+}
+
+async function build(fixture) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [path.join(project, "node_modules/astro/bin/astro.mjs"), "build"],
+      {
+        cwd: fixture.root,
+        env: {
+          ...process.env,
+          CMS_URL: fixture.url,
+          CMS_READ_API_TOKEN: sentinel,
+          ASTRO_TELEMETRY_DISABLED: "1",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 30000,
+      },
+    );
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      output += String(chunk);
+    });
+    child.on("error", reject);
+    child.on("close", (code) => resolve({ code, output }));
+  });
+}
+
+async function outputFiles(directory, prefix = "") {
+  const results = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const relative = `${prefix}${entry.name}`;
+    if (entry.isDirectory())
+      results.push(
+        ...(await outputFiles(
+          path.join(directory, entry.name),
+          `${relative}/`,
+        )),
+      );
+    else results.push(relative);
+  }
+  return results;
+}
+
+for (const base of ["/", "/demo-industrial/"]) {
+  test(
+    `actual Astro routes render enabled CMS locales with base=${base}`,
+    { timeout: 40000 },
+    async (t) => {
+      const rows = records();
+      const fixture = await setup(t, rows, base);
+      const result = await build(fixture);
+      assert.equal(
+        result.code,
+        0,
+        "actual project routes must build from mock CMS",
+      );
+      assert.ok(!result.output.includes(sentinel));
+      const files = await outputFiles(path.join(fixture.root, "dist"));
+      const enabled = rows.filter((x) => x.enabled);
+      assert.deepEqual(
+        files.filter((x) => x.endsWith(".html")).sort(),
+        [
+          "index.html",
+          ...enabled.map((x) => `${x.urlSegment}/index.html`),
+        ].sort(),
+      );
+      for (const language of enabled) {
+        const html = await readFile(
+          path.join(fixture.root, "dist", language.urlSegment, "index.html"),
+          "utf8",
+        );
+        assert.ok(html.includes(`lang="${language.strapiLocale}"`));
+        assert.ok(html.includes(`dir="${language.direction}"`));
+        assert.ok(html.includes(`<h1>Title-${language.strapiLocale}</h1>`));
+        const links = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/gu)].map(
+          (x) => x[1],
+        );
+        assert.deepEqual(
+          links.sort(),
+          enabled.map((x) => languageHref(base, x.urlSegment)).sort(),
+        );
+        if (language.strapiLocale === "zh-CN")
+          assert.match(html, /<p id="description"><\/p>/u);
+      }
+      const root = await readFile(
+        path.join(fixture.root, "dist/index.html"),
+        "utf8",
+      );
+      assert.ok(root.includes(`content="0;url=${languageHref(base, "en")}"`));
+      assert.ok(root.includes(`href="${languageHref(base, "en")}"`));
+      for (const file of files) {
+        const content = await readFile(
+          path.join(fixture.root, "dist", file),
+          "utf8",
+        );
+        assert.ok(!content.includes(sentinel));
+        assert.doesNotMatch(content, /localhost|127\.0\.0\.1|<script\b/iu);
+      }
+      assert.equal(
+        fixture.calls.filter((x) => x.path === "/api/site-locales").length,
+        1,
+        "root and dynamic pages share one build manifest snapshot",
+      );
+      assert.equal(fixture.calls.filter((x) => x.locale === "fr").length, 0);
+      assert.ok(fixture.calls.every((x) => x.method === "GET"));
+    },
+  );
+}
+
+test(
+  "a newly enabled mock CMS language generates a route without page source edits",
+  { timeout: 40000 },
+  async (t) => {
+    const rows = records().map((x) => ({ ...x, enabled: true }));
+    const fixture = await setup(t, rows);
+    const result = await build(fixture);
+    assert.equal(result.code, 0);
+    const html = await readFile(
+      path.join(fixture.root, "dist/fr/index.html"),
+      "utf8",
+    );
+    assert.match(html, /lang="fr"/u);
+  },
+);
+
+for (const [name, mutate, expected] of [
+  [
+    "duplicate Locale",
+    (rows) => [...rows, record("en", "english", { isDefault: false })],
+    /Duplicate Strapi Locale/u,
+  ],
+  [
+    "disabled default",
+    (rows) => rows.map((x) => (x.isDefault ? { ...x, enabled: false } : x)),
+    /default language must be enabled/u,
+  ],
+  [
+    "unsafe URL",
+    (rows) =>
+      rows.map((x) =>
+        x.strapiLocale === "zh-CN" ? { ...x, urlSegment: "../zh" } : x,
+      ),
+    /one safe lowercase ASCII path segment/u,
+  ],
+  [
+    "invalid direction",
+    (rows) => rows.map((x) => ({ ...x, direction: "vertical" })),
+    /site-locale.direction/u,
+  ],
+  [
+    "wrong site",
+    (rows) =>
+      rows.map((x) => ({
+        ...x,
+        siteId: CMS_SITE_ID === "personal-site" ? "demo-b2b" : "personal-site",
+      })),
+    /site-locale.siteId/u,
+  ],
+]) {
+  test(
+    `structural error blocks actual SSG: ${name}`,
+    { timeout: 40000 },
+    async (t) => {
+      const fixture = await setup(t, mutate(records()));
+      const result = await build(fixture);
+      assert.notEqual(result.code, 0);
+      assert.match(result.output, expected);
+      assert.ok(!result.output.includes(sentinel));
+    },
+  );
+}
+
+test(
+  "missing localized homepage blocks SSG without fallback",
+  { timeout: 40000 },
+  async (t) => {
+    const fixture = await setup(t, records(), "/", true);
+    const result = await build(fixture);
+    assert.notEqual(result.code, 0);
+    assert.match(result.output, /Published homepage is missing/u);
+  },
+);

@@ -82,9 +82,9 @@ The planned content sources are:
 - A separate local Strapi 5 CMS for structured content
 - Repository-managed Markdown for technical articles and project write-ups
 
-CMS integration and Markdown content collections are not yet implemented.
+The CMS Client/Adapter and CMS-driven language manifest now feed minimal SSG pages. Markdown content collections are not yet implemented.
 
-The current scaffold does not require Strapi to be running.
+Static generation requires an online CMS and private build environment variables. Generated pages work without Strapi. See [CMS data layer](docs/cms-data-layer.md) and [language manifest and SSG](docs/language-manifest.md).
 
 ## Deployment
 
@@ -96,4 +96,4 @@ Deployment configuration and publishing workflows will be implemented in a later
 
 B-01 provides the initial repository and development tooling.
 
-The current page is a temporary Astro scaffold. Internationalization, CMS integration, article routing, production UI, and SEO features are intentionally deferred to later stages.
+B-03-03 adds CMS-driven prefixed language pages and an English root entry, using minimal semantic HTML. English fallback, article routing, production UI, and SEO remain deferred.

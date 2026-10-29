@@ -1,11 +1,26 @@
 ---
-import Welcome from "../components/Welcome.astro";
-import Layout from "../layouts/Layout.astro";
+import { loadSiteBuildContext } from "../lib/i18n/build.ts";
+import { languageHref } from "../lib/i18n/urls.ts";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const { manifest } = await loadSiteBuildContext();
+const language = manifest.defaultLanguage;
+const target = languageHref(import.meta.env.BASE_URL, language.urlSegment);
 ---
 
-<Layout>
-  <Welcome />
-</Layout>
+<!doctype html>
+<html lang={language.strapiLocale} dir={language.direction}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="refresh" content={`0;url=${target}`} />
+    <title>English entry</title>
+  </head>
+  <body>
+    <main>
+      <h1>English entry</h1>
+      <p>
+        <a href={target}>Continue in English</a>
+      </p>
+    </main>
+  </body>
+</html>

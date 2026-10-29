@@ -1,6 +1,6 @@
 # CMS 数据层（B-03-02）
 
-本仓库独立维护 `src/lib/cms/`，不依赖另一站点的代码或共享 npm 包。页面当前没有接入 CMS；普通构建不需要 CMS 凭据或运行中的 Strapi。
+本仓库独立维护 `src/lib/cms/`，不依赖另一站点的代码或共享 npm 包。B-03-03 已由最小动态页面消费数据层；静态构建现在需要有效的构建环境和在线 CMS，参见 [语言 Manifest 与 SSG](language-manifest.md)。
 
 本站 Adapter 固定绑定 `personal-site` → `personal-home`。
 
@@ -58,4 +58,4 @@ pnpm build
 
 pnpm 12 默认可能在运行脚本前自动安装依赖。只使用现有依赖验证时，可以为当前进程设置 `pnpm_config_verify_deps_before_run=false`，无需改动项目配置。
 
-真实 API 联调、语言路由、英语回退、Markdown、UI 和完整 manifest 冲突校验均留给后续阶段。
+B-03-03 已完成真实 Content API 联调、CMS Manifest、最小语言路由及结构冲突校验，详见 [语言 Manifest 与 SSG](language-manifest.md)。英语回退、Markdown、正式 UI 和 SEO/发布仍留给后续阶段。

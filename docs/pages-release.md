@@ -188,3 +188,21 @@ If Pages settings require permissions or an interactive user action unavailable
 to the operator, report the precise blocked control and stop; do not expand token
 permissions or work around access checks. Keep test-stage noindex until an explicit
 reviewed source decision changes the indexing policy.
+
+### Durable hold for the special user-site repository
+
+B-04-02 observed that a normal main push re-enabled legacy main Pages even after
+source None had been saved. Source None alone is therefore not a durable hold
+for this repository. Using the normal Pages API to set `build_type: workflow`
+(or Source → GitHub Actions in the authorized UI), while the repository contains
+no publishing workflow, provides a temporary non-branch-publishing hold. Verify
+that the effective build_type remains workflow before and after source pushes;
+a stored source.branch=main value is inactive in this mode. If Pages is absent,
+the same documented API can create the workflow-mode hold. Do not grant any new
+permissions. Once the checked gh-pages branch exists, set build_type=legacy and
+source={branch: gh-pages, path: /}, then verify its exact deployment SHA.
+
+If any already queued main Pages job is visible, cancel that specific job using
+normal Actions controls before proceeding. Recheck effective settings instead of
+assuming an earlier None selection remains effective. Never leave a real release
+on main or leave the temporary workflow hold as the final publishing source.

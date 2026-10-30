@@ -1,19 +1,15 @@
 ---
 import type { GetStaticPaths } from "astro";
-import {
-  createHomeStaticPaths,
-  loadSiteBuildContext,
-} from "../../lib/i18n/build.ts";
+import { loadHomeBuildData } from "../../lib/i18n/build.ts";
 import type { HomePageProps } from "../../lib/i18n/build.ts";
 import { languageHref } from "../../lib/i18n/urls.ts";
 
 export const getStaticPaths = (async () => {
-  const context = await loadSiteBuildContext();
-  return createHomeStaticPaths(context);
+  return (await loadHomeBuildData()).paths;
 }) satisfies GetStaticPaths;
 
 type Props = HomePageProps;
-const { manifest, language, content } = Astro.props;
+const { manifest, language, content, translation } = Astro.props;
 ---
 
 <!doctype html>
@@ -21,7 +17,9 @@ const { manifest, language, content } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{content.headline}</title>
+    <title
+      lang={content.headline.sourceLocale ?? language.strapiLocale}
+    >{content.headline.value}</title>
   </head>
   <body>
     <nav aria-label="Languages">
@@ -42,9 +40,29 @@ const { manifest, language, content } = Astro.props;
         ))}
       </ul>
     </nav>
-    <main>
-      <h1>{content.headline}</h1>
-      <p id="description">{content.description}</p>
+    <main
+      data-entry-missing={String(translation.entryMissing)}
+      data-mixed-language={String(translation.mixedLanguage)}
+    >
+      <h1
+        lang={content.headline.sourceLocale ?? language.strapiLocale}
+        data-source-locale={content.headline.sourceLocale}
+        data-fallback={String(content.headline.fallback)}
+        data-fallback-reason={content.headline.reason ?? undefined}
+      >
+        {content.headline.value}
+      </h1>
+      {content.description.value !== null && (
+        <p
+          id="description"
+          lang={content.description.sourceLocale ?? language.strapiLocale}
+          data-source-locale={content.description.sourceLocale}
+          data-fallback={String(content.description.fallback)}
+          data-fallback-reason={content.description.reason ?? undefined}
+        >
+          {content.description.value}
+        </p>
+      )}
       <dl>
         <dt>Site</dt>
         <dd>{manifest.siteId}</dd>

@@ -44,7 +44,7 @@ interface LanguageManifest {
 
 当前页面只有无样式的语义 HTML、内容字段和配置调试信息，没有正式视觉设计，也没有 Canonical、hreflang、Sitemap 或发布流程。
 
-空字符串/null description 原样渲染为空段落，不做字段回退。若启用语言的整个首页为 missing，构建明确失败，不尝试英语。英语回退留给 B-03-04。
+B-03-04A 已在 Adapter 之后加入英语字段级/整项回退和翻译报告。构建先验证英语首页，错误路径、认证、网络和类型错误仍阻断；空 description 或整项缺失仅在英语基准有效后回退。详见 [英语回退与翻译报告](english-fallback.md)。
 
 ## base 与环境
 
@@ -74,4 +74,4 @@ pnpm build
 
 测试使用模拟 REST 和系统临时目录中的实际 Astro 构建，不修改真实 CMS。覆盖禁用语言、配置结构错误、确定性、映射、RTL、base、构建阻断和新增模拟语言自动生成路由。现有 B-03-02 测试继续保留。
 
-全局 Locale 权限、字段/整项回退、正式 UI、Markdown、SEO 与发布均未扩展。B-03-04 可继承 LanguageManifest、ManifestLanguage、HomePageProps、loadSiteBuildContext()、createHomeStaticPaths()、languageHref() 和原有 CMS Adapter。
+全局 Locale 权限、正式 UI、Markdown、SEO 与发布均未扩展。B-03-04A 已实现回退与报告；后续阶段可继承 LanguageManifest、ManifestLanguage、HomePageProps、loadSiteBuildContext()、createHomeStaticPaths()、languageHref() 和原有 CMS Adapter。

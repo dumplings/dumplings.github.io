@@ -39,7 +39,7 @@ const records = () => [
   record("fr", "fr", { enabled: false }),
 ];
 
-async function setup(t, rows, base = "/", missing = false) {
+async function setup(t, rows, base = "/", options = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "cms-ssg-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "src"));
@@ -106,19 +106,38 @@ async function setup(t, rows, base = "/", missing = false) {
       CMS_SITE_ID === "personal-site" ? "personal-home" : "b2b-home";
     if (url.pathname === `/api/${endpoint}`) {
       const locale = url.searchParams.get("locale");
-      response.end(
-        JSON.stringify({
-          data:
-            missing && locale === "zh-CN"
-              ? null
-              : {
-                  locale,
-                  headline: `Title-${locale}`,
-                  description:
-                    locale === "zh-CN" ? null : `Description-${locale}`,
-                },
-        }),
-      );
+      if (options.badHomepagePath) {
+        response.writeHead(404).end(JSON.stringify({ error: "Not found" }));
+        return;
+      }
+      if (options.failureLocale === locale) {
+        if (options.failure === "network") request.socket.destroy();
+        else
+          response
+            .writeHead(options.status)
+            .end(JSON.stringify({ error: "Upstream failure" }));
+        return;
+      }
+      const content =
+        (options.missing && locale === "zh-CN") ||
+        (options.englishMissing && locale === "en")
+          ? null
+          : {
+              locale,
+              headline:
+                locale === "en" && options.englishHeadline !== undefined
+                  ? options.englishHeadline
+                  : `Title-${locale}`,
+              description:
+                locale === "en" && options.englishDescription !== undefined
+                  ? options.englishDescription
+                  : locale === "zh-CN"
+                    ? null
+                    : `Description-${locale}`,
+            };
+      if (content && options.invalidDescription && locale === "zh-CN")
+        content.description = 42;
+      response.end(JSON.stringify({ data: content }));
       return;
     }
     response.writeHead(404).end(JSON.stringify({ error: "Not found" }));
@@ -210,7 +229,7 @@ for (const base of ["/", "/demo-industrial/"]) {
         );
         assert.ok(html.includes(`lang="${language.strapiLocale}"`));
         assert.ok(html.includes(`dir="${language.direction}"`));
-        assert.ok(html.includes(`<h1>Title-${language.strapiLocale}</h1>`));
+        assert.ok(html.includes(`>Title-${language.strapiLocale}</h1>`));
         const links = [...html.matchAll(/<a\b[^>]*href="([^"]+)"/gu)].map(
           (x) => x[1],
         );
@@ -219,8 +238,37 @@ for (const base of ["/", "/demo-industrial/"]) {
           enabled.map((x) => languageHref(base, x.urlSegment)).sort(),
         );
         if (language.strapiLocale === "zh-CN")
-          assert.match(html, /<p id="description"><\/p>/u);
+          assert.match(
+            html,
+            /<p id="description"[^>]*lang="en"[^>]*data-fallback="true"[^>]*>Description-en<\/p>/u,
+          );
       }
+      const report = JSON.parse(
+        await readFile(
+          path.join(fixture.root, "dist/translation-report.json"),
+          "utf8",
+        ),
+      );
+      assert.equal(report.totals.eligibleFields, 2 * (enabled.length - 1));
+      assert.equal(
+        report.totals.translatedFields,
+        report.totals.eligibleFields - 1,
+      );
+      assert.equal(report.totals.fallbackFields, 1);
+      assert.equal(
+        report.languages.some((x) => x.targetLocale === "fr"),
+        false,
+      );
+      assert.equal(
+        fixture.calls.filter((x) => x.locale === "en").length,
+        1,
+        "English is fetched once for pages and report",
+      );
+      assert.equal(
+        fixture.calls.filter((x) => x.locale !== null)[0].locale,
+        "en",
+      );
+      assert.match(result.output, /WARNING \[translations\]/u);
       const root = await readFile(
         path.join(fixture.root, "dist/index.html"),
         "utf8",
@@ -304,18 +352,124 @@ for (const [name, mutate, expected] of [
       const result = await build(fixture);
       assert.notEqual(result.code, 0);
       assert.match(result.output, expected);
+      t.diagnostic(
+        `Expected failing Astro build exited ${result.code}: ${name}`,
+      );
       assert.ok(!result.output.includes(sentinel));
     },
   );
 }
 
 test(
-  "missing localized homepage blocks SSG without fallback",
+  "missing localized homepage builds with entry fallback and warnings",
   { timeout: 40000 },
   async (t) => {
-    const fixture = await setup(t, records(), "/", true);
+    const fixture = await setup(t, records(), "/", { missing: true });
     const result = await build(fixture);
-    assert.notEqual(result.code, 0);
-    assert.match(result.output, /Published homepage is missing/u);
+    assert.equal(result.code, 0);
+    assert.match(result.output, /WARNING \[translations\]/u);
+    const report = JSON.parse(
+      await readFile(
+        path.join(fixture.root, "dist/translation-report.json"),
+        "utf8",
+      ),
+    );
+    const zh = report.languages.find((x) => x.targetLocale === "zh-CN");
+    assert.equal(zh.entryMissing, true);
+    assert.equal(zh.coverage.ratio, 0);
+    assert.ok(
+      zh.fields.every(
+        (x) => x.sourceLocale === "en" && x.reason === "missing-entry",
+      ),
+    );
+    const html = await readFile(
+      path.join(fixture.root, "dist/zh/index.html"),
+      "utf8",
+    );
+    assert.match(html, /data-entry-missing="true"/u);
+    assert.match(html, />Title-en<\/h1>/u);
   },
 );
+
+test(
+  "optional English and local descriptions absent are not rendered or counted",
+  { timeout: 40000 },
+  async (t) => {
+    const fixture = await setup(t, records(), "/", {
+      englishDescription: null,
+    });
+    const result = await build(fixture);
+    assert.equal(result.code, 0);
+    const report = JSON.parse(
+      await readFile(
+        path.join(fixture.root, "dist/translation-report.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(
+      report.totals.eligibleFields,
+      records().filter((x) => x.enabled && !x.isDefault).length,
+    );
+    const html = await readFile(
+      path.join(fixture.root, "dist/zh/index.html"),
+      "utf8",
+    );
+    assert.doesNotMatch(html, /id="description"/u);
+  },
+);
+
+for (const [name, options, expected] of [
+  [
+    "English missing",
+    { englishMissing: true },
+    /English baseline homepage is missing/u,
+  ],
+  ["English blank", { englishHeadline: " \t" }, /English baseline headline/u],
+  [
+    "wrong shared endpoint 404",
+    { badHomepagePath: true },
+    /English baseline homepage is missing/u,
+  ],
+  ["401", { failureLocale: "zh-CN", status: 401 }, /CMS authorization failed/u],
+  ["403", { failureLocale: "zh-CN", status: 403 }, /CMS authorization failed/u],
+  ["500", { failureLocale: "zh-CN", status: 500 }, /CMS HTTP request failed/u],
+  [
+    "network",
+    { failureLocale: "zh-CN", failure: "network" },
+    /CMS network request failed/u,
+  ],
+  [
+    "invalid field type",
+    { invalidDescription: true },
+    /Invalid CMS field: data.description/u,
+  ],
+]) {
+  test(
+    `fatal error blocks actual SSG without translation fallback: ${name}`,
+    { timeout: 40000 },
+    async (t) => {
+      const fixture = await setup(t, records(), "/", options);
+      const result = await build(fixture);
+      assert.notEqual(result.code, 0);
+      assert.match(result.output, expected);
+      t.diagnostic(
+        `Expected failing Astro build exited ${result.code}: ${name}`,
+      );
+      assert.doesNotMatch(result.output, /WARNING \[translations\]/u);
+      assert.ok(!result.output.includes(sentinel));
+      await assert.rejects(
+        readFile(path.join(fixture.root, "dist/translation-report.json")),
+      );
+      if (
+        options.englishMissing ||
+        options.badHomepagePath ||
+        options.englishHeadline !== undefined
+      ) {
+        assert.deepEqual(
+          fixture.calls.filter((x) => x.locale !== null).map((x) => x.locale),
+          ["en"],
+        );
+      }
+    },
+  );
+}

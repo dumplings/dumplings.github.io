@@ -96,4 +96,4 @@ Deployment configuration and publishing workflows will be implemented in a later
 
 B-01 provides the initial repository and development tooling.
 
-B-03-03 adds CMS-driven prefixed language pages and an English root entry, using minimal semantic HTML. English fallback, article routing, production UI, and SEO remain deferred.
+B-03-03 adds CMS-driven prefixed language pages and an English root entry, using minimal semantic HTML. B-03-04A adds English fallback and a static translation report. See [fallback rules and reporting](docs/english-fallback.md). Article routing, production UI, and SEO remain deferred.

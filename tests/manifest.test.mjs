@@ -244,32 +244,32 @@ test("static paths request only enabled locales and preserve empty descriptions"
     ["en", "ar", "zh"],
   );
   assert.deepEqual(called, ["en", "ar", "zh-CN"]);
-  assert.equal(paths[2].props.content.description, null);
+  assert.equal(paths[2].props.content.description.value, null);
 });
 
-test("missing enabled content fails without whole-record English fallback", async () => {
+test("missing enabled content uses English only after validating its baseline", async () => {
   const manifest = createLanguageManifest([
     record("en", "en"),
     record("zh-CN", "zh"),
   ]);
   const called = [];
-  await assert.rejects(
-    createHomeStaticPaths({
-      manifest,
-      adapter: {
-        getHome: async (locale) => {
-          called.push(locale);
-          return locale === "en"
-            ? {
-                status: "found",
-                locale,
-                content: { headline: "English", description: "English" },
-              }
-            : { status: "missing", locale };
-        },
+  const paths = await createHomeStaticPaths({
+    manifest,
+    adapter: {
+      getHome: async (locale) => {
+        called.push(locale);
+        return locale === "en"
+          ? {
+              status: "found",
+              locale,
+              content: { headline: "English", description: "English" },
+            }
+          : { status: "missing", locale };
       },
-    }),
-    /Published homepage is missing/u,
-  );
+    },
+  });
   assert.deepEqual(called, ["en", "zh-CN"]);
+  assert.equal(paths[1].props.translation.entryMissing, true);
+  assert.equal(paths[1].props.content.headline.sourceLocale, "en");
+  assert.equal(paths[1].props.content.headline.reason, "missing-entry");
 });

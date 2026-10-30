@@ -115,3 +115,76 @@ with the currently reviewed policy is blocked; rebuild it under the current poli
 B-04-01 does not push gh-pages, enable Pages, perform live URL validation, or run
 a real rollback. Tests use disposable local bare repositories for Git failure and
 restoring-commit checks. These are not production release exercises.
+
+## B-04-02 operations runbook
+
+1. Use the recorded Node/pnpm versions. In the CMS repository, start the existing
+   compiled Strapi runtime with `pnpm start` if no local instance is running.
+   Provide the existing private `.env` to each Astro repository; never commit it.
+   Confirm the authenticated CMS preflight passes. Do not change data or permissions
+   to make a failing build pass.
+2. Confirm clean `main`, exact expected origin and live `git ls-remote` main SHA.
+   Inspect GitHub Settings → Pages **before and after** a normal `git push origin
+main`. Stop on an unexpected publishing source, especially user-site `main /`.
+   Resolve it using authorized normal Pages controls; do not force-push, rename
+   again, or delete the repository. For maintenance after first publication, the
+   expected source is Deploy from a branch → `gh-pages` → `/ (root)`.
+3. Run `pnpm pages:prepare`, then `pnpm pages:check`. Read the current run's
+   `.pages/runs/RUN_ID/report.json`, not an older successful report. Translation
+   warnings may remain; CMS, structure, secret, URL, and package failures block.
+4. Run `pnpm pages:publish` for a dry-run, then `pnpm pages:publish --execute` for
+   the authorized release. Record `previousRelease`, `releaseCommit`,
+   `sourceCommit`, and `artifactHash` from the new local report. These reports are
+   local evidence; preserve their full SHAs before deleting any local build data.
+5. On the first publication, after the checked `gh-pages` branch exists, configure
+   Settings → Pages → Deploy from a branch → `gh-pages` → `/ (root)` and Save.
+   Confirm through Pages settings/API that the effective branch is `gh-pages`.
+   Do not use `main`, and do not add cloud workflows that contact localhost CMS.
+6. Wait for the Pages build/deployment for the **expected full gh-pages SHA** to
+   finish successfully. A successful push, an older deployment, or an HTTP 200
+   alone is insufficient. Fetch `release.json` with cache bypass and compare its
+   exact content with the intended artifact; sourceCommit plus builtAt and the
+   artifact digest identify its content. The full static commit is recorded in
+   gh-pages and the local release report, rather than embedded circularly in itself.
+7. Check every path in release.json, canonical/hreflang/noindex, icons and other
+   referenced resources, Sitemap/robots, root static English entry, and missing
+   private/report URLs. Confirm the Chinese-only article has no invented English
+   page, B2B French entry fallback remains English, and Arabic stays RTL. Check
+   HTML/JS for CMS credentials and local CMS URLs without printing secrets.
+8. Once static deployment is confirmed, gracefully stop the local Strapi process
+   used for the build, after verifying its PID and working directory. Do not kill
+   unrelated processes or edit SQLite. Recheck online pages and resources while
+   port 1337 has no listener. Publishing a previously checked package and restoring
+   a release do not require the CMS to be running.
+
+For a safe A/B/restore drill, record and preserve release A, then rebuild B while
+CMS is still running. Require all page/asset bytes and artifactHash to match A;
+only release.json's fresh build timestamp should differ. B may be prepared before
+the CMS shutdown and pushed after the offline-access check. Verify B is actually
+live before running the restoring command below. A no-op-looking commit without
+an observable release identity change is not sufficient evidence of a deployment.
+
+```sh
+pnpm pages:rollback FULL_RELEASE_A_SHA
+pnpm pages:rollback FULL_RELEASE_A_SHA --execute
+```
+
+Wait for the new restoring commit R to deploy. Verify R has B as its parent,
+R's Git tree equals A's tree, public release.json and every artifact byte equal A,
+and source main SHA is unchanged throughout the drill. Keep A, B, and R in history.
+Do not force-reset the remote branch. Repeat independently for the other site.
+
+If a release fails, retain the run report and redacted build diagnostics. Check
+CMS connectivity/authentication for preflight errors, clean-source/provenance gates
+for local failures, and GitHub Pages build status plus the configured branch for
+deployment failures. For network errors or a rejected non-fast-forward push, read
+live refs before retrying; never assume a timed-out push failed or overwrite a
+concurrent release. CDN delay is pending work until the expected release is served.
+For a bad deployed artifact, restore the preceding validated gh-pages SHA with
+the normal rollback command and verify the new deployment. A historical policy
+mismatch deliberately blocks restoration and requires a reviewed rebuild.
+
+If Pages settings require permissions or an interactive user action unavailable
+to the operator, report the precise blocked control and stop; do not expand token
+permissions or work around access checks. Keep test-stage noindex until an explicit
+reviewed source decision changes the indexing policy.

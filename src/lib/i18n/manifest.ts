@@ -27,8 +27,8 @@ export class ManifestError extends Error {
   }
 }
 
-/** Validates ALL records before selecting enabled languages. This does not
- * claim global Strapi Locale membership: the existing Token cannot list it. */
+/** Validates the structure of ALL records before selecting enabled languages.
+ * loadLanguageManifest additionally checks global Locale membership. */
 export function createLanguageManifest(input: unknown): LanguageManifest {
   if (!Array.isArray(input)) {
     throw new ManifestError(
@@ -122,7 +122,21 @@ export function createLanguageManifest(input: unknown): LanguageManifest {
 }
 
 export async function loadLanguageManifest(
-  adapter: Pick<CmsAdapter, "getSiteLocales">,
+  adapter: Pick<CmsAdapter, "getSiteLocales" | "getGlobalLocales">,
 ): Promise<LanguageManifest> {
-  return createLanguageManifest(await adapter.getSiteLocales());
+  const [records, globalLocales] = await Promise.all([
+    adapter.getSiteLocales(),
+    adapter.getGlobalLocales(),
+  ]);
+  const knownLocales = new Set(globalLocales);
+  // Check the original snapshot, including disabled records, before routing.
+  for (const record of records) {
+    if (!knownLocales.has(record.strapiLocale)) {
+      throw new ManifestError(
+        "unregistered-locale",
+        "Site language references an unregistered global Locale.",
+      );
+    }
+  }
+  return createLanguageManifest(records);
 }

@@ -32,7 +32,7 @@ interface LanguageManifest {
 
 结构错误抛 ManifestError，带可识别 code。Adapter 更早发现的字段错误仍可能抛 CmsError；两者都会直接阻断构建，没有降级为静态硬编码语言表。
 
-现有只读 Token 对 GET /api/i18n/locales 返回 HTTP 403。Manifest 没有宣称已核验全局 Locale 成员资格，不自动申请权限、不读取全局 Locale 的其他管理接口。启用语言的首页是否可读，由各页的真实内容请求验证；禁用记录以及未被站点引用的全局 Locale 仍不能通过当前 Token 完整核验。
+B-03-07B 经用户授权，仅为现有 Custom Token 增加官方 listLocales 读取 action。GET /api/i18n/locales 已实测 200；构建通过 Adapter 读取并验证顶层数组，Manifest 对全部站点配置（包括 disabled）检查全局成员资格。未知代码、403、网络失败或非法清单响应均阻断构建。
 
 ## 路由与页面
 
@@ -74,4 +74,8 @@ pnpm build
 
 测试使用模拟 REST 和系统临时目录中的实际 Astro 构建，不修改真实 CMS。覆盖禁用语言、配置结构错误、确定性、映射、RTL、base、构建阻断和新增模拟语言自动生成路由。现有 B-03-02 测试继续保留。
 
-全局 Locale 权限、正式 UI、Markdown、SEO 与发布均未扩展。B-03-04A 已实现回退与报告；后续阶段可继承 LanguageManifest、ManifestLanguage、HomePageProps、loadSiteBuildContext()、createHomeStaticPaths()、languageHref() 和原有 CMS Adapter。
+正式 UI、SEO 与发布仍未开展。B-03-04A 已实现回退与报告，B-03-05/06 已加入 Markdown，B-03-07B 已补齐全局 Locale 只读权限与成员校验；后续阶段可继承 LanguageManifest、ManifestLanguage、HomePageProps、loadSiteBuildContext()、createHomeStaticPaths()、languageHref() 和原有 CMS Adapter。
+
+## B-03-07B global Locale membership
+
+The existing Custom Token additionally grants only `plugin::i18n.locales.listLocales`. `CmsClient.getGlobalLocales()` reads the built-in `GET /api/i18n/locales`; its top-level array is validated by `parseGlobalLocales()` and exposed as code strings by the Adapter. `loadLanguageManifest()` validates every site-locale record against this snapshot, including disabled records. Unknown members and authentication/network/invalid-list errors fail SSG; there is no skip or fallback. The pure `createLanguageManifest()` helper continues to handle structural validation; builds must use `loadLanguageManifest()` through the existing build context.

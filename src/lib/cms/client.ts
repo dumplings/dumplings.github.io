@@ -116,6 +116,9 @@ export function createCmsClient(options: CmsClientOptions): CmsClient {
   }
 
   return {
+    async getGlobalLocales() {
+      return request("api/i18n/locales", {});
+    },
     async getSingleType(type: HomeContentType, locale: string) {
       if (
         !["personal-home", "b2b-home"].includes(type) ||

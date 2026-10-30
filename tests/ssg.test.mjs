@@ -78,6 +78,14 @@ async function setup(t, rows, base = "/", options = {}) {
       response.writeHead(401).end(JSON.stringify({ error: "Unauthorized" }));
       return;
     }
+    if (url.pathname === "/api/i18n/locales") {
+      response.end(
+        JSON.stringify(
+          ["en", "zh-CN", "ar", "de", "fr"].map((code) => ({ code })),
+        ),
+      );
+      return;
+    }
     if (url.pathname === "/api/site-locales") {
       if (url.searchParams.get("filters[siteId][$eq]") !== CMS_SITE_ID) {
         response

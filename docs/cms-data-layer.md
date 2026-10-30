@@ -59,3 +59,7 @@ pnpm build
 pnpm 12 默认可能在运行脚本前自动安装依赖。只使用现有依赖验证时，可以为当前进程设置 `pnpm_config_verify_deps_before_run=false`，无需改动项目配置。
 
 B-03-03 已完成真实 Content API 联调、CMS Manifest、最小语言路由及结构冲突校验，详见 [语言 Manifest 与 SSG](language-manifest.md)。B-03-04A 已在独立消费层实现 [英语回退与翻译报告](english-fallback.md)，Adapter 本身继续保留原始空字段和 missing 状态。Markdown、正式 UI 和 SEO/发布仍留给后续阶段。
+
+## B-03-07B global Locale membership
+
+The existing Custom Token additionally grants only `plugin::i18n.locales.listLocales`. `CmsClient.getGlobalLocales()` reads the built-in `GET /api/i18n/locales`; its top-level array is validated by `parseGlobalLocales()` and exposed as code strings by the Adapter. `loadLanguageManifest()` validates every site-locale record against this snapshot, including disabled records. Unknown members and authentication/network/invalid-list errors fail SSG; there is no skip or fallback. The pure `createLanguageManifest()` helper continues to handle structural validation; builds must use `loadLanguageManifest()` through the existing build context.

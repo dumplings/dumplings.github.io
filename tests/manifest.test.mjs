@@ -55,6 +55,7 @@ test("manifest keeps mappings, filters disabled records and sorts deterministica
 test("manifest reads all records through the existing Adapter", async () => {
   let count = 0;
   const manifest = await loadLanguageManifest({
+    getGlobalLocales: async () => ["en", "zh-CN", "ar", "fr"],
     getSiteLocales: async () => {
       count++;
       return records();

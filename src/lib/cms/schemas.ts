@@ -92,3 +92,16 @@ export function parseCollectionPage(value: unknown) {
   }
   return { data: response.data as unknown[], page, pageSize, pageCount, total };
 }
+
+/** Strapi i18n returns a top-level array, without the Content API data envelope. */
+export function parseGlobalLocales(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length === 0) invalid("global-locales");
+  const seen = new Set<string>();
+  return value.map((entry) => {
+    const data = object(entry, "global-locale");
+    const code = nonEmptyString(data.code, "global-locale.code");
+    if (code !== code.trim() || seen.has(code)) invalid("global-locale.code");
+    seen.add(code);
+    return code;
+  });
+}

@@ -42,11 +42,13 @@ export class CmsError extends Error {
 
 /** Raw REST payloads stop at the Adapter; consumers receive domain objects. */
 export interface CmsClient {
+  getGlobalLocales(): Promise<unknown>;
   getSingleType(type: HomeContentType, locale: string): Promise<unknown>;
   getSiteLocales(siteId: SiteId): Promise<unknown[]>;
 }
 
 export interface CmsAdapter {
+  getGlobalLocales(): Promise<string[]>;
   getHome(locale: string): Promise<HomeResult>;
   getSiteLocales(): Promise<SiteLocale[]>;
 }

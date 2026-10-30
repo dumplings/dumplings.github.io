@@ -1,0 +1,60 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getCollection } from "astro:content";
+import { loadSiteBuildContext } from "../../../lib/i18n/build.ts";
+import {
+  articleHref,
+  createArticleRoutes,
+} from "../../../lib/articles/routes.ts";
+import { renderMarkdown } from "../../../lib/markdown/render.ts";
+
+export const getStaticPaths = (async () => {
+  const { manifest } = await loadSiteBuildContext();
+  return createArticleRoutes(await getCollection("articles"), manifest);
+}) satisfies GetStaticPaths;
+
+type Props = ReturnType<typeof createArticleRoutes>[number]["props"];
+const { article, language, versions } = Astro.props;
+const html = renderMarkdown(article.body);
+---
+
+<!doctype html>
+<html lang={language.strapiLocale} dir={language.direction}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{article.data.title}</title>
+  </head>
+  <body>
+    <nav aria-label="Article languages">
+      <ul>
+        {versions.map((version) => (
+          <li>
+            <a
+              href={articleHref(
+                import.meta.env.BASE_URL,
+                version.language.urlSegment,
+                version.slug,
+              )}
+              lang={version.language.strapiLocale}
+              dir={version.language.direction}
+              aria-current={
+                version.language.strapiLocale === language.strapiLocale
+                  ? "page"
+                  : undefined
+              }
+            >
+              {version.language.strapiLocale}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <main>
+      <article data-translation-key={article.data.translationKey}>
+        <h1>{article.data.title}</h1>
+        <div set:html={html} />
+      </article>
+    </main>
+  </body>
+</html>

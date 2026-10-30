@@ -19,11 +19,13 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "astro": "^7.4.2"
+    "astro": "^7.4.2",
+    "markdown-it": "14.1.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@eslint/js": "^10.0.1",
+    "@types/markdown-it": "14.1.2",
     "eslint": "^10.13.0",
     "eslint-plugin-astro": "^3.2.1",
     "husky": "^9.1.7",

@@ -78,8 +78,20 @@ repository, record the previous/static/source commit mapping in a local report,
 and never push. Source `main`, its index, and its worktree are never switched to
 gh-pages. Two independent repositories mean two independent release histories.
 
-After B-04 Agent acceptance, B-04-02 may push source `main`, configure GitHub
-Pages to deploy from `gh-pages` at `/`, and explicitly run:
+During B-04-01, renaming the personal repository to the special user-site name
+was observed to enable a legacy Pages build from `main` automatically, despite
+the initial Pages API returning 404. The API refused deactivation (422); the
+official GitHub Pages UI successfully saved publishing branch `None`, and the
+API was rechecked afterward. No checked artifact was pushed. Public URL access
+was deliberately not tested, so a transient public state is not claimed absent.
+
+Before any B-04-02 source push, inspect Pages again and establish a non-publishing
+hold if needed; do not push main while it is a publishing source. GitHub's
+[documented source-None control](https://docs.github.com/en/pages/getting-started-with-github-pages/deleting-a-github-pages-site)
+was the successful control in this run. Verify the hold behavior in B-04-02,
+then publish source history and checked artifacts and select `gh-pages` at `/`.
+
+After B-04 Agent acceptance and those checks, B-04-02 may explicitly run:
 
 ```sh
 pnpm pages:publish --execute

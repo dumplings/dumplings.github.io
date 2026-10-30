@@ -16,7 +16,12 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "prepare": "husky",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "pages:prepare": "node scripts/pages.mjs prepare",
+    "pages:check": "node scripts/pages.mjs check",
+    "pages:publish": "node scripts/pages.mjs publish",
+    "pages:rollback": "node scripts/pages.mjs rollback",
+    "test:pages": "node --test tests/pages.test.mjs"
   },
   "dependencies": {
     "astro": "^7.4.2",

@@ -115,6 +115,15 @@ test(
     const fixture = await mkdtemp(path.join(tmpdir(), "global-locale-ssg-"));
     t.after(() => rm(fixture, { recursive: true, force: true }));
     await mkdir(path.join(fixture, "src/pages/[lang]"), { recursive: true });
+    await cp(
+      path.join(project, "src/components"),
+      path.join(fixture, "src/components"),
+      { recursive: true },
+    );
+    await cp(
+      path.join(project, "deploy.config.mjs"),
+      path.join(fixture, "deploy.config.mjs"),
+    );
     await cp(path.join(project, "src/lib"), path.join(fixture, "src/lib"), {
       recursive: true,
     });

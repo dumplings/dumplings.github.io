@@ -1,4 +1,5 @@
 ---
+import SeoHead from "../components/SeoHead.astro";
 import { loadSiteBuildContext } from "../lib/i18n/build.ts";
 import { languageHref } from "../lib/i18n/urls.ts";
 
@@ -13,7 +14,12 @@ const target = languageHref(import.meta.env.BASE_URL, language.urlSegment);
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta http-equiv="refresh" content={`0;url=${target}`} />
-    <title>English entry</title>
+    <SeoHead
+      title="English entry"
+      description="Continue to the English homepage."
+      canonicalPath={target}
+      entry
+    />
   </head>
   <body>
     <main>

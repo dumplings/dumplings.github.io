@@ -5,7 +5,7 @@ import astro from "eslint-plugin-astro";
 
 export default defineConfig([
   {
-    ignores: ["dist/**", ".astro/**", "node_modules/**"],
+    ignores: ["dist/**", ".pages/**", ".astro/**", "node_modules/**"],
   },
   {
     files: ["**/*.{js,mjs,cjs}"],

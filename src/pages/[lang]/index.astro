@@ -1,7 +1,9 @@
 ---
+import SeoHead from "../../components/SeoHead.astro";
 import type { GetStaticPaths } from "astro";
 import { loadHomeBuildData } from "../../lib/i18n/build.ts";
 import type { HomePageProps } from "../../lib/i18n/build.ts";
+import { homeAlternates } from "../../lib/seo/policy.ts";
 import { languageHref } from "../../lib/i18n/urls.ts";
 
 export const getStaticPaths = (async () => {
@@ -17,9 +19,23 @@ const { manifest, language, content, translation } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <title
-      lang={content.headline.sourceLocale ?? language.strapiLocale}
-    >{content.headline.value}</title>
+    <SeoHead
+      titleLang={content.headline.sourceLocale ?? language.strapiLocale}
+      descriptionLang={
+        content.description.sourceLocale ??
+        content.headline.sourceLocale ??
+        language.strapiLocale
+      }
+      title={content.headline.value ?? "Home"}
+      description={
+        content.description.value || content.headline.value || "Home"
+      }
+      canonicalPath={languageHref(
+        import.meta.env.BASE_URL,
+        language.urlSegment,
+      )}
+      alternates={homeAlternates(manifest)}
+    />
   </head>
   <body>
     <nav aria-label="Languages">

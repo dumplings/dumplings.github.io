@@ -1,4 +1,6 @@
 ---
+import SeoHead from "../../../components/SeoHead.astro";
+import { absoluteUrl } from "../../../lib/seo/policy.ts";
 import type { GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 import { loadSiteBuildContext } from "../../../lib/i18n/build.ts";
@@ -23,7 +25,25 @@ const html = renderMarkdown(article.body);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>{article.data.title}</title>
+    <SeoHead
+      title={article.data.title}
+      description={article.data.title}
+      canonicalPath={articleHref(
+        import.meta.env.BASE_URL,
+        language.urlSegment,
+        article.data.slug,
+      )}
+      alternates={versions.map((version) => ({
+        locale: version.language.strapiLocale,
+        href: absoluteUrl(
+          articleHref(
+            import.meta.env.BASE_URL,
+            version.language.urlSegment,
+            version.slug,
+          ),
+        ),
+      }))}
+    />
   </head>
   <body>
     <nav aria-label="Article languages">

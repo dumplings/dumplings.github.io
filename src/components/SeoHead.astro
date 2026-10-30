@@ -1,0 +1,38 @@
+---
+import { absoluteUrl, indexingEnabled } from "../lib/seo/policy.ts";
+import type { Alternate } from "../lib/seo/policy.ts";
+
+interface Props {
+  title: string;
+  titleLang?: string;
+  descriptionLang?: string;
+  description: string;
+  canonicalPath: string;
+  alternates?: Alternate[];
+  entry?: boolean;
+}
+const {
+  title,
+  titleLang,
+  descriptionLang,
+  description,
+  canonicalPath,
+  alternates = [],
+  entry = false,
+} = Astro.props;
+const indexable = !entry && indexingEnabled();
+---
+
+<title lang={titleLang}>{title}</title>
+<meta name="description" content={description} lang={descriptionLang} />
+<meta name="robots" content={indexable ? "index, follow" : "noindex, follow"} />
+<link rel="canonical" href={absoluteUrl(canonicalPath)} />
+{alternates.map((alt) => (
+  <link rel="alternate" hreflang={alt.locale} href={alt.href} />
+))}
+<link
+  rel="icon"
+  type="image/svg+xml"
+  href={`${import.meta.env.BASE_URL}favicon.svg`}
+/>
+<link rel="icon" href={`${import.meta.env.BASE_URL}favicon.ico`} />

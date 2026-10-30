@@ -82,7 +82,7 @@ The planned content sources are:
 - A separate local Strapi 5 CMS for structured content
 - Repository-managed Markdown for technical articles and project write-ups
 
-The CMS Client/Adapter and CMS-driven language manifest now feed minimal SSG pages. Markdown content collections are not yet implemented.
+The CMS Client/Adapter and CMS-driven language manifest now feed minimal SSG pages. Markdown article collections and actual-version routing are implemented.
 
 Static generation requires an online CMS and private build environment variables. Generated pages work without Strapi. See [CMS data layer](docs/cms-data-layer.md) and [language manifest and SSG](docs/language-manifest.md).
 
@@ -90,7 +90,7 @@ Static generation requires an online CMS and private build environment variables
 
 The intended GitHub Pages repository is `dumplings.github.io`.
 
-Deployment configuration and publishing workflows will be implemented in a later project stage.
+B-04-01 provides local checked SSG artifacts and independent gh-pages publishing commands. First public deployment remains reserved for B-04-02; see [Pages preparation](docs/pages-release.md).
 
 ## Current Status
 
@@ -101,3 +101,7 @@ B-03-03 adds CMS-driven prefixed language pages and an English root entry, using
 ## Markdown pipeline
 
 B-03-05/06 adds minimal, build-time Markdown content. See [the Markdown ADR](docs/adr/0001-markdown-articles.md). No production UI or publishing workflow is included.
+
+## B-04-01 local Pages preparation
+
+See [Pages preparation and rollback](docs/pages-release.md) for the current deployment policy, checked static package, commands, and B-04-02 publishing boundary. CMS siteId is unchanged.

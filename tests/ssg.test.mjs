@@ -43,6 +43,15 @@ async function setup(t, rows, base = "/", options = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "cms-ssg-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, "src"));
+  await cp(
+    path.join(project, "src/components"),
+    path.join(root, "src/components"),
+    { recursive: true },
+  );
+  await writeFile(
+    path.join(root, "deploy.config.mjs"),
+    `export const deployment = { repository: "dumplings/dumplings.github.io", site: "https://dumplings.github.io", base: ${JSON.stringify(base)}, indexing: "noindex" };`,
+  );
   await cp(path.join(project, "src/lib"), path.join(root, "src/lib"), {
     recursive: true,
   });
